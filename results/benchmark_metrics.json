@@ -1,0 +1,90 @@
+{
+    "models": {
+        "Classical PSD + SVM": {
+            "EER": 0.12724704673857218,
+            "EER_threshold": 0.9690000000000001,
+            "AUC": 0.9550452818910159,
+            "d_prime": 2.4564027786254883,
+            "FAR@FRR=1%": 0.4564714946070878,
+            "FRR@FAR=1%": 0.2711864406779661,
+            "genuine_mean": 0.9852192401885986,
+            "impostor_mean": 0.9516408443450928,
+            "genuine_std": 0.011071608401834965,
+            "impostor_std": 0.015847498551011086,
+            "num_genuine_pairs": 708.0,
+            "num_impostor_pairs": 7788.0,
+            "latency_ms": 3.13875,
+            "params": 480.0
+        },
+        "Standard 1D-CNN (CE)": {
+            "EER": 0.0,
+            "EER_threshold": 0.44500000000000006,
+            "AUC": 1.0,
+            "d_prime": 14.089983940124512,
+            "FAR@FRR=1%": 0.0,
+            "FRR@FAR=1%": 0.0,
+            "genuine_mean": 0.9919363856315613,
+            "impostor_mean": 0.23520392179489136,
+            "genuine_std": 0.006203928031027317,
+            "impostor_std": 0.07569953799247742,
+            "num_genuine_pairs": 708.0,
+            "num_impostor_pairs": 7788.0,
+            "latency_ms": 0.38042599997424986,
+            "params": 61356.0
+        },
+        "EEGNet Baseline": {
+            "EER": 0.0,
+            "EER_threshold": 0.6280000000000001,
+            "AUC": 1.0,
+            "d_prime": 6.3956451416015625,
+            "FAR@FRR=1%": 0.0,
+            "FRR@FAR=1%": 0.0,
+            "genuine_mean": 0.9609645009040833,
+            "impostor_mean": 0.06500404328107834,
+            "genuine_std": 0.05047944188117981,
+            "impostor_std": 0.1915770322084427,
+            "num_genuine_pairs": 708.0,
+            "num_impostor_pairs": 7788.0,
+            "latency_ms": 0.8706520000123419,
+            "params": 1436.0
+        },
+        "Proposed WearableBrainprintNet": {
+            "EER": 0.0,
+            "EER_threshold": 0.625,
+            "AUC": 1.0,
+            "d_prime": 5.774821758270264,
+            "FAR@FRR=1%": 0.0,
+            "FRR@FAR=1%": 0.0,
+            "genuine_mean": 0.9981760382652283,
+            "impostor_mean": 0.2436487078666687,
+            "genuine_std": 0.0011504699941724539,
+            "impostor_std": 0.18477490544319153,
+            "num_genuine_pairs": 708.0,
+            "num_impostor_pairs": 7788.0,
+            "latency_ms": 2.380866000021342,
+            "params": 166268.0
+        }
+    },
+    "attacks": {
+        "legitimate_probe": {
+            "without_defense": 1.0,
+            "with_defense": 1.0
+        },
+        "exact_replay": {
+            "without_defense": 1.0,
+            "with_defense": 0.0
+        },
+        "jittered_replay": {
+            "without_defense": 1.0,
+            "with_defense": 0.5263157894736842
+        },
+        "synthetic_spoof": {
+            "without_defense": 0.5263157894736842,
+            "with_defense": 0.0
+        },
+        "cross_subject_masquerade": {
+            "without_defense": 0.0,
+            "with_defense": 0.0
+        }
+    }
+}
