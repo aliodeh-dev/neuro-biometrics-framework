@@ -64,3 +64,5 @@ class FrameworkConfig:
     num_subjects: int = 20
     num_sessions: int = 4                 # Temporal sessions per subject (for cross-session LOSO-CV)
     records_per_session_sec: float = 60.0 # Length of continuous recording per session in seconds
+    drift_difficulty: str = "realistic"   # Inter-session drift difficulty knob: "low", "medium", "realistic", "stress"
+    drift_scale: float = 0.28             # Amplitude of cross-session spatial/spectral non-stationarity

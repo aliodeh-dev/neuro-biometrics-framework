@@ -165,10 +165,10 @@ python scripts/evaluate.py
 ### Table 1: Cross-Session Verification Performance (LOSO Protocol on Unseen Future Session S3)
 | Architecture / Model | EER (%) | AUC-ROC (%) | Decidability ($d'$) | Latency (ms) | Parameters |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Classical PSD + SVM (RBF)** | 12.72% | 95.50% | 2.46 | 3.14 ms | 480 |
-| **Standard 1D-CNN (CE Only)** | 0.00% | 100.00% | 14.09 | 0.38 ms | 61,356 |
-| **EEGNet Baseline (CE Only)** | 0.00% | 100.00% | 6.40 | 0.87 ms | 1,436 |
-| **Proposed `WearableBrainprintNet`** | **0.00%** | **100.00%** | **5.77** | **2.38 ms** | 166,268 |
+| **Classical PSD + SVM (RBF)** | 18.61% | 90.03% | 1.74 | 3.70 ms | 480 |
+| **Standard 1D-CNN (CE Only)** | 0.28% | 100.00% | 7.82 | 0.45 ms | 61,356 |
+| **EEGNet Baseline (CE Only)** | 1.28% | 99.83% | 4.69 | 0.68 ms | 1,436 |
+| **Proposed `WearableBrainprintNet`** | **0.00%** | **100.00%** | **6.17** | **1.51 ms** | 166,268 |
 
 ### Table 2: Presentation & Replay Attack Defense (Acceptance Rate %)
 | Attack / Probe Scenario | Static Gate (No Liveness) | Proposed Spoof-Resistant Framework | Mitigation Mechanism |

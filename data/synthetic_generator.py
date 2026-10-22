@@ -28,6 +28,19 @@ class SyntheticEEGGenerator:
         self.session_duration = config.records_per_session_sec
         self.total_samples = int(self.fs * self.session_duration)
 
+        # Configurable drift difficulty knob (addresses reviewer feedback on cross-session realism)
+        difficulty_presets = {
+            "low": 0.08,        # Controlled sanity check baseline (subtle perturbation)
+            "medium": 0.18,     # Moderate non-stationarity
+            "realistic": 0.28,  # Realistic consumer dry-electrode repositioning & impedance shift
+            "stress": 0.42      # Extreme multi-week cross-session stress test
+        }
+        diff = getattr(config, "drift_difficulty", "realistic")
+        if hasattr(config, "drift_scale") and config.drift_scale is not None:
+            self.drift_scale = float(config.drift_scale)
+        else:
+            self.drift_scale = difficulty_presets.get(diff, 0.28)
+
         np.random.seed(config.training.seed)
         self.subject_profiles = self._initialize_subject_profiles()
 
@@ -101,28 +114,50 @@ class SyntheticEEGGenerator:
         session_seed = subject_id * 100 + session_id
         rng = np.random.RandomState(session_seed)
 
-        session_iaf = prof["iaf"] + rng.uniform(-0.25, 0.25)
-        session_theta = prof["theta_f"] + rng.uniform(-0.15, 0.15)
-        session_beta = prof["beta_f"] + rng.uniform(-0.3, 0.3)
+        # Scale non-stationarity by the drift difficulty knob
+        session_iaf = prof["iaf"] + rng.uniform(-0.8, 0.8) * (self.drift_scale / 0.28)
+        session_theta = prof["theta_f"] + rng.uniform(-0.5, 0.5) * (self.drift_scale / 0.28)
+        session_beta = prof["beta_f"] + rng.uniform(-1.2, 1.2) * (self.drift_scale / 0.28)
 
-        # 5 Neural Rhythms sources
-        # Delta (0.5 - 4 Hz)
-        delta = prof["power_weights"]["delta"] * np.sin(2 * np.pi * 2.0 * t + rng.uniform(0, 2*np.pi))
-        # Theta
-        theta = prof["power_weights"]["theta"] * np.sin(2 * np.pi * session_theta * t + rng.uniform(0, 2*np.pi))
-        # Alpha (Dominant brainprint with envelope modulation)
-        envelope_alpha = 1.0 + 0.3 * np.sin(2 * np.pi * 0.2 * t)
-        alpha = prof["power_weights"]["alpha"] * envelope_alpha * np.sin(2 * np.pi * session_iaf * t + rng.uniform(0, 2*np.pi))
+        # Multi-component wave dynamics (replaces pure single sinusoids with realistic band envelopes)
+        phi_d = rng.uniform(0, 2*np.pi, size=2)
+        delta = prof["power_weights"]["delta"] * (
+            0.75 * np.sin(2 * np.pi * 2.0 * t + phi_d[0]) +
+            0.25 * np.sin(2 * np.pi * 3.2 * t + phi_d[1])
+        )
+
+        phi_t = rng.uniform(0, 2*np.pi, size=2)
+        theta = prof["power_weights"]["theta"] * (
+            0.70 * np.sin(2 * np.pi * session_theta * t + phi_t[0]) +
+            0.30 * np.sin(2 * np.pi * (session_theta + 0.3) * t + phi_t[1])
+        )
+
+        # Alpha (Dominant brainprint with envelope modulation and multi-harmonic spread)
+        envelope_alpha = 1.0 + 0.35 * np.sin(2 * np.pi * 0.25 * t)
+        phi_a = rng.uniform(0, 2*np.pi, size=3)
+        alpha = prof["power_weights"]["alpha"] * envelope_alpha * (
+            0.65 * np.sin(2 * np.pi * session_iaf * t + phi_a[0]) +
+            0.25 * np.sin(2 * np.pi * (session_iaf - 0.45) * t + phi_a[1]) +
+            0.10 * np.sin(2 * np.pi * (session_iaf + 0.50) * t + phi_a[2])
+        )
+
         # Beta
-        beta = prof["power_weights"]["beta"] * np.sin(2 * np.pi * session_beta * t + rng.uniform(0, 2*np.pi))
+        phi_b = rng.uniform(0, 2*np.pi, size=2)
+        beta = prof["power_weights"]["beta"] * (
+            0.70 * np.sin(2 * np.pi * session_beta * t + phi_b[0]) +
+            0.30 * np.sin(2 * np.pi * (session_beta + 0.8) * t + phi_b[1])
+        )
+
         # Gamma
         gamma = prof["power_weights"]["gamma"] * np.sin(2 * np.pi * 38.0 * t + rng.uniform(0, 2*np.pi))
 
         sources = np.stack([delta, theta, alpha, beta, gamma], axis=0) # (5, samples)
 
-        # Session impedance perturbation matrix
-        session_distortion = 1.0 + rng.normal(loc=0.0, scale=0.08, size=prof["mixing_matrix"].shape)
-        active_mixing = prof["mixing_matrix"] * session_distortion
+        # Session impedance & cap repositioning perturbation matrix
+        # Models realistic physical electrode shifts and impedance variability
+        session_distortion = 1.0 + rng.normal(loc=0.0, scale=self.drift_scale, size=prof["mixing_matrix"].shape)
+        reposition_crosstalk = rng.normal(loc=0.0, scale=self.drift_scale * 0.35, size=(self.num_channels, self.num_channels))
+        active_mixing = np.dot(np.eye(self.num_channels) + reposition_crosstalk, prof["mixing_matrix"] * session_distortion)
 
         # Channel signals from cortical source projection
         eeg_channels = np.dot(active_mixing, sources) # (channels, samples)

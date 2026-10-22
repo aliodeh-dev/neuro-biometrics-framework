@@ -17,7 +17,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
 import json
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -35,15 +35,23 @@ from evaluation.metrics import BiometricMetricsEvaluator
 from evaluation.visualizer import BiometricVisualizer
 
 def run_full_benchmark(
-    num_subjects: int = 15,
+    num_subjects: int = 12,
     num_sessions: int = 4,
-    epochs: int = 25
+    epochs: int = 25,
+    drift_difficulty: str = "realistic",
+    dataset_type: str = "synthetic",
+    bed_dir: Optional[str] = None
 ):
     print("=================================================================")
     print(" NEURO-BIOMETRICS COMPREHENSIVE BENCHMARK & EVALUATION SUITE")
+    print(f" Dataset: {dataset_type.upper()} | Drift Difficulty: {drift_difficulty}")
     print("=================================================================")
 
-    config = FrameworkConfig(num_subjects=num_subjects, num_sessions=num_sessions)
+    config = FrameworkConfig(
+        num_subjects=num_subjects,
+        num_sessions=num_sessions,
+        drift_difficulty=drift_difficulty
+    )
     config.model.num_classes = num_subjects
     config.model.num_channels = len(config.preprocessing.channels)
     device = config.training.device
@@ -53,10 +61,17 @@ def run_full_benchmark(
     attack_sim = ReplayAttackSimulator(config.security)
     liveness_verifier = LivenessVerifier(config.security, fs=config.preprocessing.sampling_rate)
 
-    # 1. Dataset Generation
-    print("\n[Phase 1] Generating Multi-Session Wearable EEG Cohort...")
-    generator = SyntheticEEGGenerator(config)
-    epochs_data, metadata = generator.generate_full_dataset()
+    # 1. Dataset Generation / Loading
+    if dataset_type == "bed" and bed_dir is not None:
+        from data.bed_dataset_loader import BEDDatasetLoader
+        print(f"\n[Phase 1] Loading Real-World BED Dataset from '{bed_dir}'...")
+        loader = BEDDatasetLoader(data_dir=bed_dir, config=config)
+        epochs_data, metadata = loader.load_full_cohort(num_subjects=num_subjects, num_sessions=num_sessions)
+    else:
+        print(f"\n[Phase 1] Generating Multi-Session Wearable EEG Cohort (Drift: {drift_difficulty})...")
+        generator = SyntheticEEGGenerator(config)
+        epochs_data, metadata = generator.generate_full_dataset()
+
     dataset = EEGMultiSessionDataset(epochs_data, metadata)
     print(f"Generated {len(dataset)} epochs across {num_subjects} subjects and {num_sessions} sessions.")
 
@@ -379,4 +394,21 @@ def export_summary_reports(
     print(f"Exported benchmark summary to {md_path} and {json_path}")
 
 if __name__ == "__main__":
-    run_full_benchmark(num_subjects=12, num_sessions=4, epochs=25)
+    import argparse
+    parser = argparse.ArgumentParser(description="Evaluate Neuro-Biometrics Framework")
+    parser.add_argument("--subjects", type=int, default=12, help="Number of subjects")
+    parser.add_argument("--sessions", type=int, default=4, help="Number of sessions")
+    parser.add_argument("--epochs", type=int, default=25, help="Training epochs")
+    parser.add_argument("--drift", type=str, default="realistic", choices=["low", "medium", "realistic", "stress"], help="Synthetic drift difficulty")
+    parser.add_argument("--dataset", type=str, default="synthetic", choices=["synthetic", "bed"], help="Dataset source")
+    parser.add_argument("--bed_dir", type=str, default=None, help="Directory of downloaded BED dataset")
+    args = parser.parse_args()
+
+    run_full_benchmark(
+        num_subjects=args.subjects,
+        num_sessions=args.sessions,
+        epochs=args.epochs,
+        drift_difficulty=args.drift,
+        dataset_type=args.dataset,
+        bed_dir=args.bed_dir
+    )
