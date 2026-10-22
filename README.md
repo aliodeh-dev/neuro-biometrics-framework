@@ -201,4 +201,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 * **Author**: Ali Odeh
 * **GitHub**: [@aliodeh-dev](https://github.com/aliodeh-dev)
-* **Email**: alie0deh1999@gmail.com
+* **Email**: aliodehkhudhairenad@gmail.com
